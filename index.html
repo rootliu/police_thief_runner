@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>警察抓小偷 - Thief Runner</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="game-header">
+            <div class="score-panel">
+                <span>得分: <span id="score">0</span></span>
+                <span>关卡: <span id="level">1</span></span>
+                <span>生命: <span id="lives">3</span></span>
+                <span>宝物: <span id="treasures">0</span>/<span id="total-treasures">0</span></span>
+            </div>
+        </div>
+        <canvas id="gameCanvas" width="800" height="576"></canvas>
+        <div id="game-info">
+            <p>方向键: 移动 | Z键: 挖左洞 | X键: 挖右洞 | P键: 暂停 | R键: 重启</p>
+        </div>
+    </div>
+
+    <script src="js/constants.js"></script>
+    <script src="js/physics.js"></script>
+    <script src="js/level.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/enemy.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

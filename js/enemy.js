@@ -1,0 +1,158 @@
+// 敌人（警察）类
+
+class Enemy {
+    constructor(gridX, gridY) {
+        this.x = gridX * TILE_SIZE + TILE_SIZE / 2;
+        this.y = gridY * TILE_SIZE + TILE_SIZE / 2;
+        this.spawnX = gridX;
+        this.spawnY = gridY;
+        this.width = TILE_SIZE - 4;
+        this.height = TILE_SIZE - 4;
+        this.velocityY = 0;
+        this.direction = Direction.LEFT;
+        this.isOnGround = false;
+        this.isOnLadder = false;
+        this.isTrapped = false;
+        this.trapTimer = 0;
+    }
+
+    update(playerX, playerY, level) {
+        // 检查当前状态
+        this.isOnLadder = Physics.isOnLadder(this.x, this.y, level.map);
+        this.isOnGround = Physics.isOnGround(this.x, this.y, level.map);
+
+        // 检查是否被困在洞里
+        const grid = Physics.pixelToGrid(this.x, this.y);
+        const currentTile = level.getTile(grid.gridX, grid.gridY);
+        if (currentTile === TILES.DUG_HOLE && this.isOnGround) {
+            this.isTrapped = true;
+            this.trapTimer = Date.now();
+        }
+
+        // 如果被困，等待重生
+        if (this.isTrapped) {
+            if (Date.now() - this.trapTimer > 3000) { // 3秒后重生
+                this.respawn();
+            }
+            return;
+        }
+
+        // 简单的AI：追踪玩家
+        this.chasePlayer(playerX, playerY, level);
+
+        // 重力
+        if (!this.isOnLadder) {
+            if (!this.isOnGround) {
+                this.velocityY += GRAVITY;
+                if (this.velocityY > MAX_FALL_SPEED) {
+                    this.velocityY = MAX_FALL_SPEED;
+                }
+            } else {
+                this.velocityY = 0;
+            }
+        } else {
+            this.velocityY = 0;
+        }
+
+        // 应用垂直速度
+        this.y += this.velocityY;
+
+        // 边界检查
+        if (this.x < TILE_SIZE) this.x = TILE_SIZE;
+        if (this.x > CANVAS_WIDTH - TILE_SIZE) this.x = CANVAS_WIDTH - TILE_SIZE;
+        if (this.y < TILE_SIZE) this.y = TILE_SIZE;
+        if (this.y > CANVAS_HEIGHT - TILE_SIZE) this.y = CANVAS_HEIGHT - TILE_SIZE;
+    }
+
+    chasePlayer(playerX, playerY, level) {
+        const dx = playerX - this.x;
+        const dy = playerY - this.y;
+
+        // 水平追踪
+        if (Math.abs(dx) > 10) {
+            if (dx > 0) {
+                this.direction = Direction.RIGHT;
+                if (Physics.canMove(this.x, this.y, Direction.RIGHT, level.map)) {
+                    this.x += ENEMY_SPEED;
+                }
+            } else {
+                this.direction = Direction.LEFT;
+                if (Physics.canMove(this.x, this.y, Direction.LEFT, level.map)) {
+                    this.x -= ENEMY_SPEED;
+                }
+            }
+        }
+
+        // 垂直追踪（如果在梯子上）
+        if (this.isOnLadder && Math.abs(dy) > 10) {
+            if (dy > 0) {
+                this.y += CLIMB_SPEED * 0.8;
+            } else {
+                this.y -= CLIMB_SPEED * 0.8;
+            }
+        }
+    }
+
+    respawn() {
+        this.x = this.spawnX * TILE_SIZE + TILE_SIZE / 2;
+        this.y = this.spawnY * TILE_SIZE + TILE_SIZE / 2;
+        this.velocityY = 0;
+        this.isTrapped = false;
+    }
+
+    render(ctx) {
+        if (this.isTrapped) {
+            // 被困时显示为半透明
+            ctx.globalAlpha = 0.5;
+        }
+
+        const drawX = this.x - this.width / 2;
+        const drawY = this.y - this.height / 2;
+
+        // 警察身体（红色）
+        ctx.fillStyle = COLORS.ENEMY;
+        ctx.fillRect(drawX, drawY, this.width, this.height);
+
+        // 警徽
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(drawX + this.width / 2, drawY + this.height / 2, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 眼睛
+        ctx.fillStyle = '#FFFFFF';
+        const eyeSize = 4;
+        const eyeY = drawY + 6;
+        if (this.direction === Direction.RIGHT) {
+            ctx.fillRect(drawX + this.width - 12, eyeY, eyeSize, eyeSize);
+            ctx.fillRect(drawX + this.width - 6, eyeY, eyeSize, eyeSize);
+        } else {
+            ctx.fillRect(drawX + 4, eyeY, eyeSize, eyeSize);
+            ctx.fillRect(drawX + 10, eyeY, eyeSize, eyeSize);
+        }
+
+        // 帽子（警察帽）
+        ctx.fillStyle = '#000080';
+        ctx.fillRect(drawX + 2, drawY - 2, this.width - 4, 4);
+
+        // 边框
+        ctx.strokeStyle = '#AA0000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(drawX, drawY, this.width, this.height);
+
+        ctx.globalAlpha = 1.0;
+    }
+
+    checkCollisionWithPlayer(playerX, playerY, playerWidth, playerHeight) {
+        return Physics.checkCollision(
+            this.x - this.width / 2,
+            this.y - this.height / 2,
+            this.width,
+            this.height,
+            playerX - playerWidth / 2,
+            playerY - playerHeight / 2,
+            playerWidth,
+            playerHeight
+        );
+    }
+}
