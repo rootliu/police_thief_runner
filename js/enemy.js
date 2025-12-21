@@ -1,7 +1,7 @@
 // 敌人（警察）类
 
 class Enemy {
-    constructor(gridX, gridY) {
+    constructor(gridX, gridY, levelMap = null) {
         this.x = gridX * TILE_SIZE + TILE_SIZE / 2;
         this.y = gridY * TILE_SIZE + TILE_SIZE / 2;
         this.spawnX = gridX;
@@ -14,28 +14,25 @@ class Enemy {
         this.isOnLadder = false;
         this.isTrapped = false;
         this.trapTimer = 0;
+        
+        // 简单直接设置位置：警察起始位置 (22,2)
+        if (levelMap) {
+            this.y = gridY * TILE_SIZE + TILE_SIZE / 2; // 直接站在第2行中心
+        }
     }
 
     update(playerX, playerY, level) {
-        // 检查当前状态
-        this.isOnLadder = Physics.isOnLadder(this.x, this.y, level.map);
-        this.isOnGround = Physics.isOnGround(this.x, this.y, level.map);
-
-        // 检查是否被困在洞里
-        const grid = Physics.pixelToGrid(this.x, this.y);
-        const currentTile = level.getTile(grid.gridX, grid.gridY);
-        if (currentTile === TILES.DUG_HOLE && this.isOnGround) {
-            this.isTrapped = true;
-            this.trapTimer = Date.now();
-        }
-
-        // 如果被困，等待重生
+        // 如果已经被困，等待重生
         if (this.isTrapped) {
             if (Date.now() - this.trapTimer > 3000) { // 3秒后重生
-                this.respawn();
+                this.respawn(level.map);
             }
             return;
         }
+
+        // 检查当前状态（使用新的物理系统）
+        this.isOnLadder = Physics.isOnLadder(this.x, this.y, this.height, level.map);
+        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map);
 
         // 简单的AI：追踪玩家
         this.chasePlayer(playerX, playerY, level);
@@ -62,6 +59,19 @@ class Enemy {
         if (this.x > CANVAS_WIDTH - TILE_SIZE) this.x = CANVAS_WIDTH - TILE_SIZE;
         if (this.y < TILE_SIZE) this.y = TILE_SIZE;
         if (this.y > CANVAS_HEIGHT - TILE_SIZE) this.y = CANVAS_HEIGHT - TILE_SIZE;
+
+        // 检查是否掉入陷阱（在移动和重力应用后检查）
+        const grid = Physics.pixelToGrid(this.x, this.y);
+        const belowTile = level.getTile(grid.gridX, grid.gridY + 1);
+
+        // 如果脚下是被挖的洞，就被困住
+        if (belowTile === TILES.DUG_HOLE) {
+            this.isTrapped = true;
+            this.trapTimer = Date.now();
+            // 将警察固定在陷阱中
+            this.y = (grid.gridY + 1) * TILE_SIZE + TILE_SIZE / 2;
+            this.velocityY = 0;
+        }
     }
 
     chasePlayer(playerX, playerY, level) {
@@ -72,12 +82,12 @@ class Enemy {
         if (Math.abs(dx) > 10) {
             if (dx > 0) {
                 this.direction = Direction.RIGHT;
-                if (Physics.canMove(this.x, this.y, Direction.RIGHT, level.map)) {
+                if (Physics.canMove(this.x, this.y, Direction.RIGHT, this.width, level.map)) {
                     this.x += ENEMY_SPEED;
                 }
             } else {
                 this.direction = Direction.LEFT;
-                if (Physics.canMove(this.x, this.y, Direction.LEFT, level.map)) {
+                if (Physics.canMove(this.x, this.y, Direction.LEFT, this.width, level.map)) {
                     this.x -= ENEMY_SPEED;
                 }
             }
@@ -93,11 +103,16 @@ class Enemy {
         }
     }
 
-    respawn() {
+    respawn(levelMap = null) {
         this.x = this.spawnX * TILE_SIZE + TILE_SIZE / 2;
         this.y = this.spawnY * TILE_SIZE + TILE_SIZE / 2;
         this.velocityY = 0;
         this.isTrapped = false;
+        
+        // 简单直接设置位置
+        if (levelMap) {
+            this.y = this.spawnY * TILE_SIZE + TILE_SIZE / 2;
+        }
     }
 
     render(ctx) {
@@ -106,8 +121,9 @@ class Enemy {
             ctx.globalAlpha = 0.5;
         }
 
-        const drawX = this.x - this.width / 2;
-        const drawY = this.y - this.height / 2;
+        // 确保角色居中对齐到格子
+        const drawX = Math.floor(this.x - this.width / 2);
+        const drawY = Math.floor(this.y - this.height / 2);
 
         // 警察身体（红色）
         ctx.fillStyle = COLORS.ENEMY;
@@ -124,8 +140,8 @@ class Enemy {
         const eyeSize = 4;
         const eyeY = drawY + 6;
         if (this.direction === Direction.RIGHT) {
-            ctx.fillRect(drawX + this.width - 12, eyeY, eyeSize, eyeSize);
-            ctx.fillRect(drawX + this.width - 6, eyeY, eyeSize, eyeSize);
+            ctx.fillRect(drawX + this.width - 14, eyeY, eyeSize, eyeSize);
+            ctx.fillRect(drawX + this.width - 8, eyeY, eyeSize, eyeSize);
         } else {
             ctx.fillRect(drawX + 4, eyeY, eyeSize, eyeSize);
             ctx.fillRect(drawX + 10, eyeY, eyeSize, eyeSize);
@@ -133,7 +149,7 @@ class Enemy {
 
         // 帽子（警察帽）
         ctx.fillStyle = '#000080';
-        ctx.fillRect(drawX + 2, drawY - 2, this.width - 4, 4);
+        ctx.fillRect(drawX + 2, drawY + 2, this.width - 4, 3);
 
         // 边框
         ctx.strokeStyle = '#AA0000';

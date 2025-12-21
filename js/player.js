@@ -1,7 +1,7 @@
 // 玩家类
 
 class Player {
-    constructor(gridX, gridY) {
+    constructor(gridX, gridY, levelMap = null) {
         // 将角色放置在格子的中心
         this.x = gridX * TILE_SIZE + TILE_SIZE / 2;
         this.y = gridY * TILE_SIZE + TILE_SIZE / 2;
@@ -13,26 +13,32 @@ class Player {
         this.isOnLadder = false;
         this.isOnBar = false;
         this.isAlive = true;
+        
+        // 简单直接设置位置：玩家起始位置 (2,2)，站在第2行
+        // 第3行是砖块，所以玩家应该站在第2行的中心
+        if (levelMap) {
+            this.y = gridY * TILE_SIZE + TILE_SIZE / 2; // 直接站在第2行中心
+        }
     }
 
     update(keys, level) {
         if (!this.isAlive) return;
 
-        // 检查当前状态
-        this.isOnLadder = Physics.isOnLadder(this.x, this.y, level.map);
-        this.isOnBar = Physics.isOnBar(this.x, this.y, level.map);
-        this.isOnGround = Physics.isOnGround(this.x, this.y, level.map);
+        // 检查当前状态（使用新的物理系统）
+        this.isOnLadder = Physics.isOnLadder(this.x, this.y, this.height, level.map);
+        this.isOnBar = Physics.isOnBar(this.x, this.y, this.height, level.map);
+        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map);
 
         // 水平移动
         if (keys['ArrowLeft']) {
             this.direction = Direction.LEFT;
-            if (Physics.canMove(this.x, this.y, Direction.LEFT, level.map)) {
+            if (Physics.canMove(this.x, this.y, Direction.LEFT, this.width, level.map)) {
                 this.x -= PLAYER_SPEED;
             }
         }
         if (keys['ArrowRight']) {
             this.direction = Direction.RIGHT;
-            if (Physics.canMove(this.x, this.y, Direction.RIGHT, level.map)) {
+            if (Physics.canMove(this.x, this.y, Direction.RIGHT, this.width, level.map)) {
                 this.x += PLAYER_SPEED;
             }
         }
@@ -105,8 +111,9 @@ class Player {
     render(ctx) {
         if (!this.isAlive) return;
 
-        const drawX = this.x - this.width / 2;
-        const drawY = this.y - this.height / 2;
+        // 确保角色居中对齐到格子
+        const drawX = Math.floor(this.x - this.width / 2);
+        const drawY = Math.floor(this.y - this.height / 2);
 
         // 玩家身体（蓝色小偷）
         ctx.fillStyle = COLORS.PLAYER;
@@ -115,10 +122,10 @@ class Player {
         // 眼睛
         ctx.fillStyle = '#FFFFFF';
         const eyeSize = 4;
-        const eyeY = drawY + 8;
+        const eyeY = drawY + 6;
         if (this.direction === Direction.RIGHT) {
-            ctx.fillRect(drawX + this.width - 12, eyeY, eyeSize, eyeSize);
-            ctx.fillRect(drawX + this.width - 6, eyeY, eyeSize, eyeSize);
+            ctx.fillRect(drawX + this.width - 14, eyeY, eyeSize, eyeSize);
+            ctx.fillRect(drawX + this.width - 8, eyeY, eyeSize, eyeSize);
         } else {
             ctx.fillRect(drawX + 4, eyeY, eyeSize, eyeSize);
             ctx.fillRect(drawX + 10, eyeY, eyeSize, eyeSize);
@@ -126,7 +133,7 @@ class Player {
 
         // 帽子（小偷标志）
         ctx.fillStyle = '#000000';
-        ctx.fillRect(drawX + 4, drawY - 2, this.width - 8, 4);
+        ctx.fillRect(drawX + 4, drawY + 2, this.width - 8, 3);
 
         // 边框
         ctx.strokeStyle = '#0000AA';
@@ -138,10 +145,15 @@ class Player {
         return { x: this.x, y: this.y };
     }
 
-    reset(gridX, gridY) {
+    reset(gridX, gridY, levelMap = null) {
         this.x = gridX * TILE_SIZE + TILE_SIZE / 2;
         this.y = gridY * TILE_SIZE + TILE_SIZE / 2;
         this.velocityY = 0;
         this.isAlive = true;
+        
+        // 简单直接设置位置
+        if (levelMap) {
+            this.y = gridY * TILE_SIZE + TILE_SIZE / 2;
+        }
     }
 }

@@ -45,32 +45,46 @@ class Physics {
         };
     }
 
-    // 检查实体是否在地面上
-    static isOnGround(x, y, levelMap) {
-        const grid = this.pixelToGrid(x, y);
-        const belowTile = levelMap[grid.gridY + 1]?.[grid.gridX];
-
+    // 检查实体是否在地面上（考虑角色的实际高度）
+    static isOnGround(x, y, characterHeight, levelMap) {
+        // 计算角色底部的实际位置
+        const characterBottom = y + characterHeight / 2;
+        const bottomGridY = Math.floor(characterBottom / TILE_SIZE);
+        const gridX = Math.floor(x / TILE_SIZE);
+        
+        // 检查角色底部正下方的格子
+        const belowTile = levelMap[bottomGridY]?.[gridX];
+        
         return this.canStandOn(belowTile) || this.isBar(belowTile);
     }
 
-    // 检查实体是否在梯子上
-    static isOnLadder(x, y, levelMap) {
-        const grid = this.pixelToGrid(x, y);
-        const currentTile = levelMap[grid.gridY]?.[grid.gridX];
-
-        return this.isLadder(currentTile);
+    // 检查实体是否在梯子上（考虑角色的实际占据空间）
+    static isOnLadder(x, y, characterHeight, levelMap) {
+        const gridX = Math.floor(x / TILE_SIZE);
+        const characterTop = y - characterHeight / 2;
+        const characterBottom = y + characterHeight / 2;
+        
+        // 检查角色占据的所有格子中是否有梯子
+        for (let checkY = Math.floor(characterTop / TILE_SIZE); checkY <= Math.floor(characterBottom / TILE_SIZE); checkY++) {
+            const tile = levelMap[checkY]?.[gridX];
+            if (this.isLadder(tile)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
-    // 检查实体是否在横杆上
-    static isOnBar(x, y, levelMap) {
+    // 检查实体是否在横杆上（考虑角色的实际高度）
+    static isOnBar(x, y, characterHeight, levelMap) {
         const grid = this.pixelToGrid(x, y);
         const currentTile = levelMap[grid.gridY]?.[grid.gridX];
 
         return this.isBar(currentTile);
     }
 
-    // 检查移动是否会碰到墙
-    static canMove(x, y, direction, levelMap) {
+    // 检查移动是否会碰到墙（考虑角色的实际宽度）
+    static canMove(x, y, direction, characterWidth, levelMap) {
         let newX = x;
         let newY = y;
 
@@ -80,10 +94,52 @@ class Physics {
             newX += PLAYER_SPEED;
         }
 
-        const grid = this.pixelToGrid(newX, newY);
-        const tile = levelMap[grid.gridY]?.[grid.gridX];
+        // 考虑角色的实际宽度，检查左右边界
+        const characterLeft = newX - characterWidth / 2;
+        const characterRight = newX + characterWidth / 2;
+        const characterTop = y - (TILE_SIZE - 4) / 2;
+        const characterBottom = y + (TILE_SIZE - 4) / 2;
 
-        return !this.isSolid(tile);
+        // 检查角色占据的所有格子
+        const leftGridX = Math.floor(characterLeft / TILE_SIZE);
+        const rightGridX = Math.floor(characterRight / TILE_SIZE);
+        const topGridY = Math.floor(characterTop / TILE_SIZE);
+        const bottomGridY = Math.floor(characterBottom / TILE_SIZE);
+
+        for (let checkX = leftGridX; checkX <= rightGridX; checkX++) {
+            for (let checkY = topGridY; checkY <= bottomGridY; checkY++) {
+                const tile = levelMap[checkY]?.[checkX];
+                if (this.isSolid(tile)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    // 获取角色应该站立的位置（对齐到地面）
+    static alignToGround(x, y, characterHeight, levelMap) {
+        const gridX = Math.floor(x / TILE_SIZE);
+        
+        // 从当前位置向下查找第一个可站立的地面
+        for (let checkY = Math.floor(y / TILE_SIZE); checkY < levelMap.length - 1; checkY++) {
+            const currentTile = levelMap[checkY]?.[gridX];
+            const belowTile = levelMap[checkY + 1]?.[gridX];
+            
+            // 如果当前格子是空的，且下方可以站立，则站立在当前位置
+            if (currentTile === TILES.EMPTY && this.canStandOn(belowTile)) {
+                // 简单直接的方法：角色站在空格子的中心
+                return this.gridToPixel(gridX, checkY);
+            }
+            
+            // 如果当前是梯子，可以站立
+            if (this.isLadder(currentTile)) {
+                return this.gridToPixel(gridX, checkY);
+            }
+        }
+        
+        return { x, y }; // 如果找不到合适的站立位置，返回原位置
     }
 
     // 检查两个矩形是否碰撞（用于玩家和敌人碰撞）
