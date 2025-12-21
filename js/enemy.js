@@ -27,20 +27,15 @@ class Enemy {
 
         // 检查当前状态（使用新的物理系统）
         this.isOnLadder = Physics.isOnLadder(this.x, this.y, this.height, level.map);
-        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map);
 
         // 简单的AI：追踪玩家
         this.chasePlayer(playerX, playerY, level);
 
-        // 重力
+        // 重力（如果不在梯子上）
         if (!this.isOnLadder) {
-            if (!this.isOnGround) {
-                this.velocityY += GRAVITY;
-                if (this.velocityY > MAX_FALL_SPEED) {
-                    this.velocityY = MAX_FALL_SPEED;
-                }
-            } else {
-                this.velocityY = 0;
+            this.velocityY += GRAVITY;
+            if (this.velocityY > MAX_FALL_SPEED) {
+                this.velocityY = MAX_FALL_SPEED;
             }
         } else {
             this.velocityY = 0;
@@ -49,17 +44,17 @@ class Enemy {
         // 应用垂直速度
         this.y += this.velocityY;
 
-        // 防止穿透地面 - 如果在地面上，对齐到地面
+        // 检查地面碰撞并修正位置
+        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map);
         if (this.isOnGround) {
+            // 对齐到地面
             const characterBottom = this.y + this.height / 2;
-            const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
-            const targetY = belowGridY * TILE_SIZE - this.height / 2;
+            const belowGridY = Math.floor((characterBottom + 2) / TILE_SIZE);
+            const floorTop = belowGridY * TILE_SIZE;
 
-            // 如果角色底部低于地面，将其推回地面上
-            if (characterBottom > belowGridY * TILE_SIZE) {
-                this.y = targetY;
-                this.velocityY = 0;
-            }
+            // 将角色底部对齐到地面顶部
+            this.y = floorTop - this.height / 2;
+            this.velocityY = 0;
         }
 
         // 边界检查

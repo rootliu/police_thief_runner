@@ -18,11 +18,6 @@ class Player {
     update(keys, level) {
         if (!this.isAlive) return;
 
-        // 检查当前状态（使用新的物理系统）
-        this.isOnLadder = Physics.isOnLadder(this.x, this.y, this.height, level.map);
-        this.isOnBar = Physics.isOnBar(this.x, this.y, this.height, level.map);
-        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map);
-
         // 水平移动
         if (keys['ArrowLeft']) {
             this.direction = Direction.LEFT;
@@ -51,15 +46,15 @@ class Player {
             }
         }
 
-        // 重力（如果不在梯子或横杆上，并且不在地面上）
+        // 检查当前状态（在移动前检查）
+        this.isOnLadder = Physics.isOnLadder(this.x, this.y, this.height, level.map);
+        this.isOnBar = Physics.isOnBar(this.x, this.y, this.height, level.map);
+
+        // 重力（如果不在梯子或横杆上）
         if (!this.isOnLadder && !this.isOnBar) {
-            if (!this.isOnGround) {
-                this.velocityY += GRAVITY;
-                if (this.velocityY > MAX_FALL_SPEED) {
-                    this.velocityY = MAX_FALL_SPEED;
-                }
-            } else {
-                this.velocityY = 0;
+            this.velocityY += GRAVITY;
+            if (this.velocityY > MAX_FALL_SPEED) {
+                this.velocityY = MAX_FALL_SPEED;
             }
         } else {
             // 在梯子或横杆上，重力为0
@@ -71,17 +66,17 @@ class Player {
         // 应用垂直速度
         this.y += this.velocityY;
 
-        // 防止穿透地面 - 如果在地面上，对齐到地面
+        // 检查地面碰撞并修正位置
+        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map);
         if (this.isOnGround) {
+            // 对齐到地面
             const characterBottom = this.y + this.height / 2;
-            const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
-            const targetY = belowGridY * TILE_SIZE - this.height / 2;
+            const belowGridY = Math.floor((characterBottom + 2) / TILE_SIZE);
+            const floorTop = belowGridY * TILE_SIZE;
 
-            // 如果角色底部低于地面，将其推回地面上
-            if (characterBottom > belowGridY * TILE_SIZE) {
-                this.y = targetY;
-                this.velocityY = 0;
-            }
+            // 将角色底部对齐到地面顶部
+            this.y = floorTop - this.height / 2;
+            this.velocityY = 0;
         }
 
         // 边界检查
