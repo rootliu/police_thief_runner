@@ -20,7 +20,7 @@ class Enemy {
         // 如果已经被困，等待重生
         if (this.isTrapped) {
             if (Date.now() - this.trapTimer > 3000) { // 3秒后重生
-                this.respawn(level.map);
+                this.respawn();
             }
             return;
         }

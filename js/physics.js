@@ -49,17 +49,24 @@ class Physics {
     static isOnGround(x, y, characterHeight, levelMap) {
         // 角色的y坐标是中心点，计算底部位置
         const characterBottom = y + characterHeight / 2;
-        // 检查底部下方1像素的位置（脚下的格子）
-        const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
+        // 检查脚下的格子
+        const belowGridY = Math.floor((characterBottom + 2) / TILE_SIZE);
         const gridX = Math.floor(x / TILE_SIZE);
 
-        // 检查脚下的格子
+        // 获取脚下的tile
         const belowTile = levelMap[belowGridY]?.[gridX];
 
-        // 只有当角色底部接近格子边界时才算站在地面上
-        const distanceToFloor = (belowGridY * TILE_SIZE) - characterBottom;
+        // 如果脚下没有可站立的tile，不在地面上
+        if (!this.canStandOn(belowTile) && !this.isBar(belowTile)) {
+            return false;
+        }
 
-        return (this.canStandOn(belowTile) || this.isBar(belowTile)) && distanceToFloor <= 2;
+        // 计算角色底部到地面顶部的距离
+        const floorTop = belowGridY * TILE_SIZE;
+        const distanceToFloor = Math.abs(characterBottom - floorTop);
+
+        // 只有当角色底部非常接近地面顶部时（2像素以内），才算站在地面上
+        return distanceToFloor <= 2;
     }
 
     // 检查实体是否在梯子上（考虑角色的实际占据空间）
