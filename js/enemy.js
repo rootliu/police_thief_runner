@@ -47,9 +47,9 @@ class Enemy {
         // 检查地面碰撞并修正位置
         this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map);
         if (this.isOnGround) {
-            // 对齐到地面
+            // 对齐到地面 - 使用与isOnGround相同的计算方式
             const characterBottom = this.y + this.height / 2;
-            const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
+            const belowGridY = Math.floor((characterBottom + 2) / TILE_SIZE);
             const floorTop = belowGridY * TILE_SIZE;
 
             // 将角色底部对齐到地面顶部

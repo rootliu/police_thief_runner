@@ -18,6 +18,15 @@ class Player {
     update(keys, level) {
         if (!this.isAlive) return;
 
+        // 首次调试输出
+        if (!this.debugLogged) {
+            console.log('=== PLAYER INITIAL STATE ===');
+            console.log('Position:', this.x, this.y);
+            console.log('Grid:', Math.floor(this.x/TILE_SIZE), Math.floor(this.y/TILE_SIZE));
+            console.log('VelocityY:', this.velocityY);
+            this.debugLogged = true;
+        }
+
         // 水平移动
         if (keys['ArrowLeft']) {
             this.direction = Direction.LEFT;
@@ -64,15 +73,27 @@ class Player {
         }
 
         // 应用垂直速度
+        const oldY = this.y;
         this.y += this.velocityY;
 
         // 检查地面碰撞并修正位置
         this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map);
 
+        // 调试 - 每秒输出一次
+        if (Math.random() < 0.016) {
+            console.log('Update:', {
+                y: this.y.toFixed(1),
+                velocityY: this.velocityY.toFixed(2),
+                isOnGround: this.isOnGround,
+                isOnLadder: this.isOnLadder,
+                yChanged: (this.y !== oldY)
+            });
+        }
+
         if (this.isOnGround) {
-            // 对齐到地面
+            // 对齐到地面 - 使用与isOnGround相同的计算方式
             const characterBottom = this.y + this.height / 2;
-            const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
+            const belowGridY = Math.floor((characterBottom + 2) / TILE_SIZE);
             const floorTop = belowGridY * TILE_SIZE;
 
             // 将角色底部对齐到地面顶部
