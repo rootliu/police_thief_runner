@@ -13,12 +13,12 @@ class Game {
 
         // 初始化关卡
         this.level = new Level(LEVEL_1);
-        this.player = new Player(this.level.playerStart.x, this.level.playerStart.y, this.level.map);
+        this.player = new Player(this.level.playerStart.x, this.level.playerStart.y);
         this.enemies = [];
 
         // 生成敌人
         for (let spawn of this.level.enemySpawns) {
-            this.enemies.push(new Enemy(spawn.x, spawn.y, this.level.map));
+            this.enemies.push(new Enemy(spawn.x, spawn.y));
         }
 
         this.totalTreasures = this.level.countTreasures();
@@ -176,10 +176,10 @@ class Game {
             this.state = GameState.GAME_OVER;
         } else {
             // 重置玩家位置
-            this.player.reset(this.level.playerStart.x, this.level.playerStart.y, this.level.map);
+            this.player.reset(this.level.playerStart.x, this.level.playerStart.y);
             // 重置敌人位置
             for (let enemy of this.enemies) {
-                enemy.respawn(this.level.map);
+                enemy.respawn();
             }
         }
     }
@@ -205,11 +205,11 @@ class Game {
 
         // 重新初始化关卡
         this.level = new Level(LEVEL_1);
-        this.player = new Player(this.level.playerStart.x, this.level.playerStart.y, this.level.map);
+        this.player = new Player(this.level.playerStart.x, this.level.playerStart.y);
         this.enemies = [];
 
         for (let spawn of this.level.enemySpawns) {
-            this.enemies.push(new Enemy(spawn.x, spawn.y, this.level.map));
+            this.enemies.push(new Enemy(spawn.x, spawn.y));
         }
 
         this.totalTreasures = this.level.countTreasures();

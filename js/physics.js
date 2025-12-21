@@ -47,15 +47,19 @@ class Physics {
 
     // 检查实体是否在地面上（考虑角色的实际高度）
     static isOnGround(x, y, characterHeight, levelMap) {
-        // 计算角色底部的实际位置
+        // 角色的y坐标是中心点，计算底部位置
         const characterBottom = y + characterHeight / 2;
-        const bottomGridY = Math.floor(characterBottom / TILE_SIZE);
+        // 检查底部下方1像素的位置（脚下的格子）
+        const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
         const gridX = Math.floor(x / TILE_SIZE);
-        
-        // 检查角色底部正下方的格子
-        const belowTile = levelMap[bottomGridY]?.[gridX];
-        
-        return this.canStandOn(belowTile) || this.isBar(belowTile);
+
+        // 检查脚下的格子
+        const belowTile = levelMap[belowGridY]?.[gridX];
+
+        // 只有当角色底部接近格子边界时才算站在地面上
+        const distanceToFloor = (belowGridY * TILE_SIZE) - characterBottom;
+
+        return (this.canStandOn(belowTile) || this.isBar(belowTile)) && distanceToFloor <= 2;
     }
 
     // 检查实体是否在梯子上（考虑角色的实际占据空间）
@@ -86,7 +90,6 @@ class Physics {
     // 检查移动是否会碰到墙（考虑角色的实际宽度）
     static canMove(x, y, direction, characterWidth, levelMap) {
         let newX = x;
-        let newY = y;
 
         if (direction === Direction.LEFT) {
             newX -= PLAYER_SPEED;
@@ -94,20 +97,22 @@ class Physics {
             newX += PLAYER_SPEED;
         }
 
-        // 考虑角色的实际宽度，检查左右边界
+        // 计算角色的边界（中心点坐标系统）
+        const characterHeight = TILE_SIZE - 4;
         const characterLeft = newX - characterWidth / 2;
         const characterRight = newX + characterWidth / 2;
-        const characterTop = y - (TILE_SIZE - 4) / 2;
-        const characterBottom = y + (TILE_SIZE - 4) / 2;
+        const characterTop = y - characterHeight / 2;
+        const characterBottom = y + characterHeight / 2;
 
-        // 检查角色占据的所有格子
+        // 获取角色会占据的格子范围
         const leftGridX = Math.floor(characterLeft / TILE_SIZE);
         const rightGridX = Math.floor(characterRight / TILE_SIZE);
         const topGridY = Math.floor(characterTop / TILE_SIZE);
         const bottomGridY = Math.floor(characterBottom / TILE_SIZE);
 
-        for (let checkX = leftGridX; checkX <= rightGridX; checkX++) {
-            for (let checkY = topGridY; checkY <= bottomGridY; checkY++) {
+        // 检查所有可能碰撞的格子
+        for (let checkY = topGridY; checkY <= bottomGridY; checkY++) {
+            for (let checkX = leftGridX; checkX <= rightGridX; checkX++) {
                 const tile = levelMap[checkY]?.[checkX];
                 if (this.isSolid(tile)) {
                     return false;

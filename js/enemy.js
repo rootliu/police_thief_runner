@@ -1,7 +1,7 @@
 // 敌人（警察）类
 
 class Enemy {
-    constructor(gridX, gridY, levelMap = null) {
+    constructor(gridX, gridY) {
         this.x = gridX * TILE_SIZE + TILE_SIZE / 2;
         this.y = gridY * TILE_SIZE + TILE_SIZE / 2;
         this.spawnX = gridX;
@@ -14,11 +14,6 @@ class Enemy {
         this.isOnLadder = false;
         this.isTrapped = false;
         this.trapTimer = 0;
-        
-        // 简单直接设置位置：警察起始位置 (22,2)
-        if (levelMap) {
-            this.y = gridY * TILE_SIZE + TILE_SIZE / 2; // 直接站在第2行中心
-        }
     }
 
     update(playerX, playerY, level) {
@@ -53,6 +48,19 @@ class Enemy {
 
         // 应用垂直速度
         this.y += this.velocityY;
+
+        // 防止穿透地面 - 如果在地面上，对齐到地面
+        if (this.isOnGround) {
+            const characterBottom = this.y + this.height / 2;
+            const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
+            const targetY = belowGridY * TILE_SIZE - this.height / 2;
+
+            // 如果角色底部低于地面，将其推回地面上
+            if (characterBottom > belowGridY * TILE_SIZE) {
+                this.y = targetY;
+                this.velocityY = 0;
+            }
+        }
 
         // 边界检查
         if (this.x < TILE_SIZE) this.x = TILE_SIZE;
@@ -103,16 +111,11 @@ class Enemy {
         }
     }
 
-    respawn(levelMap = null) {
+    respawn() {
         this.x = this.spawnX * TILE_SIZE + TILE_SIZE / 2;
         this.y = this.spawnY * TILE_SIZE + TILE_SIZE / 2;
         this.velocityY = 0;
         this.isTrapped = false;
-        
-        // 简单直接设置位置
-        if (levelMap) {
-            this.y = this.spawnY * TILE_SIZE + TILE_SIZE / 2;
-        }
     }
 
     render(ctx) {

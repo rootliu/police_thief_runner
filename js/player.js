@@ -1,7 +1,7 @@
 // 玩家类
 
 class Player {
-    constructor(gridX, gridY, levelMap = null) {
+    constructor(gridX, gridY) {
         // 将角色放置在格子的中心
         this.x = gridX * TILE_SIZE + TILE_SIZE / 2;
         this.y = gridY * TILE_SIZE + TILE_SIZE / 2;
@@ -13,12 +13,6 @@ class Player {
         this.isOnLadder = false;
         this.isOnBar = false;
         this.isAlive = true;
-        
-        // 简单直接设置位置：玩家起始位置 (2,2)，站在第2行
-        // 第3行是砖块，所以玩家应该站在第2行的中心
-        if (levelMap) {
-            this.y = gridY * TILE_SIZE + TILE_SIZE / 2; // 直接站在第2行中心
-        }
     }
 
     update(keys, level) {
@@ -76,6 +70,19 @@ class Player {
 
         // 应用垂直速度
         this.y += this.velocityY;
+
+        // 防止穿透地面 - 如果在地面上，对齐到地面
+        if (this.isOnGround) {
+            const characterBottom = this.y + this.height / 2;
+            const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
+            const targetY = belowGridY * TILE_SIZE - this.height / 2;
+
+            // 如果角色底部低于地面，将其推回地面上
+            if (characterBottom > belowGridY * TILE_SIZE) {
+                this.y = targetY;
+                this.velocityY = 0;
+            }
+        }
 
         // 边界检查
         if (this.x < TILE_SIZE) this.x = TILE_SIZE;
@@ -145,15 +152,10 @@ class Player {
         return { x: this.x, y: this.y };
     }
 
-    reset(gridX, gridY, levelMap = null) {
+    reset(gridX, gridY) {
         this.x = gridX * TILE_SIZE + TILE_SIZE / 2;
         this.y = gridY * TILE_SIZE + TILE_SIZE / 2;
         this.velocityY = 0;
         this.isAlive = true;
-        
-        // 简单直接设置位置
-        if (levelMap) {
-            this.y = gridY * TILE_SIZE + TILE_SIZE / 2;
-        }
     }
 }
