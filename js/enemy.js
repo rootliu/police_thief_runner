@@ -54,10 +54,11 @@ class Enemy {
         if (belowTile === TILES.DUG_HOLE && !this.isTrapped) {
             this.isTrapped = true;
             this.trapTimer = Date.now();
-            // 将警察固定在洞格子的中心位置（这样小偷可以从警察头上跑过）
+            // 将警察固定在洞格子的中心位置（X和Y都对齐到陷阱中心）
+            this.x = gridX * TILE_SIZE + TILE_SIZE / 2;
             this.y = belowGridY * TILE_SIZE + TILE_SIZE / 2;
             this.velocityY = 0;
-            console.log(`Police trapped at belowGridY=${belowGridY}, y=${this.y}, TILE_SIZE=${TILE_SIZE}`);
+            console.log(`Police trapped at grid(${gridX}, ${belowGridY}), position(${this.x}, ${this.y})`);
             return; // 立即返回，不再执行后续的地面对齐
         }
 
