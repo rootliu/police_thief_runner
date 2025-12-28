@@ -18,28 +18,25 @@ class Player {
     update(keys, level) {
         if (!this.isAlive) return;
 
-        // 首次调试输出
-        if (!this.debugLogged) {
-            console.log('=== PLAYER INITIAL STATE ===');
-            console.log('Position:', this.x, this.y);
-            console.log('Grid:', Math.floor(this.x/TILE_SIZE), Math.floor(this.y/TILE_SIZE));
-            console.log('VelocityY:', this.velocityY);
-            this.debugLogged = true;
-        }
-
         // 水平移动
         if (keys['ArrowLeft']) {
             this.direction = Direction.LEFT;
-            if (Physics.canMove(this.x, this.y, Direction.LEFT, this.width, level.map)) {
+            const canMove = Physics.canMove(this.x, this.y, Direction.LEFT, this.width, level.map);
+            if (canMove) {
                 this.x -= PLAYER_SPEED;
             }
         }
         if (keys['ArrowRight']) {
             this.direction = Direction.RIGHT;
-            if (Physics.canMove(this.x, this.y, Direction.RIGHT, this.width, level.map)) {
+            const canMove = Physics.canMove(this.x, this.y, Direction.RIGHT, this.width, level.map);
+            if (canMove) {
                 this.x += PLAYER_SPEED;
             }
         }
+
+        // 检查当前状态（在移动前检查）
+        this.isOnLadder = Physics.isOnLadder(this.x, this.y, this.height, level.map);
+        this.isOnBar = Physics.isOnBar(this.x, this.y, this.height, level.map);
 
         // 垂直移动（爬梯子或横杆）
         if (keys['ArrowUp']) {
@@ -54,10 +51,6 @@ class Player {
                 this.velocityY = 0;
             }
         }
-
-        // 检查当前状态（在移动前检查）
-        this.isOnLadder = Physics.isOnLadder(this.x, this.y, this.height, level.map);
-        this.isOnBar = Physics.isOnBar(this.x, this.y, this.height, level.map);
 
         // 重力（如果不在梯子或横杆上）
         if (!this.isOnLadder && !this.isOnBar) {
@@ -76,25 +69,26 @@ class Player {
         const oldY = this.y;
         this.y += this.velocityY;
 
-        // 检查地面碰撞并修正位置
-        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map);
-
-        // 调试 - 每秒输出一次
-        if (Math.random() < 0.016) {
-            console.log('Update:', {
-                y: this.y.toFixed(1),
-                velocityY: this.velocityY.toFixed(2),
-                isOnGround: this.isOnGround,
-                isOnLadder: this.isOnLadder,
-                yChanged: (this.y !== oldY)
-            });
-        }
+        // 检查地面碰撞并修正位置 (isPlayer=true，玩家可以穿过洞)
+        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map, true);
 
         if (this.isOnGround) {
-            // 对齐到地面 - 使用与isOnGround相同的计算方式
+            // 对齐到地面 - 找到角色底部所在的最近地面
             const characterBottom = this.y + this.height / 2;
-            const belowGridY = Math.floor((characterBottom + 2) / TILE_SIZE);
-            const floorTop = belowGridY * TILE_SIZE;
+            const gridX = Math.floor(this.x / TILE_SIZE);
+            const currentGridY = Math.floor(characterBottom / TILE_SIZE);
+            const currentTile = level.map[currentGridY]?.[gridX];
+
+            let floorTop;
+            // 只有BRICK和SOLID算作穿透的地面
+            if (currentTile === TILES.BRICK || currentTile === TILES.SOLID) {
+                // 角色已经穿透进了一个可站立的tile，对齐到这个tile的顶部
+                floorTop = currentGridY * TILE_SIZE;
+            } else {
+                // 正常站立，对齐到下方tile的顶部
+                const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
+                floorTop = belowGridY * TILE_SIZE;
+            }
 
             // 将角色底部对齐到地面顶部
             this.y = floorTop - this.height / 2;

@@ -66,14 +66,40 @@ class Level {
         return count;
     }
 
-    // 渲染关卡
-    render(ctx) {
+    // 渲染背景（除梯子外的所有元素）
+    renderBackground(ctx) {
         for (let y = 0; y < this.map.length; y++) {
             for (let x = 0; x < this.map[y].length; x++) {
                 const tile = this.map[y][x];
-                this.renderTile(ctx, tile, x, y);
+                if (tile !== TILES.LADDER) {
+                    this.renderTile(ctx, tile, x, y);
+                }
             }
         }
+    }
+
+    // 渲染梯子（显示在最上层）
+    renderLadders(ctx) {
+        let ladderCount = 0;
+        for (let y = 0; y < this.map.length; y++) {
+            for (let x = 0; x < this.map[y].length; x++) {
+                const tile = this.map[y][x];
+                if (tile === TILES.LADDER) {
+                    this.renderTile(ctx, tile, x, y);
+                    ladderCount++;
+                }
+            }
+        }
+
+        if (ladderCount > 0 && Math.random() < 0.01) { // 1%概率打印，避免刷屏
+            console.log(`Rendered ${ladderCount} ladders on top layer`);
+        }
+    }
+
+    // 保留旧的render方法以兼容（调用新的两个方法）
+    render(ctx) {
+        this.renderBackground(ctx);
+        this.renderLadders(ctx);
     }
 
     // 渲染单个地图块（像素风格）
@@ -107,15 +133,23 @@ class Level {
                 break;
 
             case TILES.LADDER:
-                // 梯子
+                // 梯子 - 检查上下是否有连接
+                const tileAbove = this.map[gridY - 1]?.[gridX];
+                const tileBelow = this.map[gridY + 1]?.[gridX];
+                const hasAbove = tileAbove === TILES.LADDER || tileAbove === TILES.EMPTY;
+                const hasBelow = tileBelow === TILES.LADDER || tileBelow === TILES.EMPTY;
+
                 ctx.strokeStyle = COLORS.LADDER;
                 ctx.lineWidth = 4;
                 ctx.beginPath();
-                ctx.moveTo(px + 8, py);
-                ctx.lineTo(px + 8, py + TILE_SIZE);
-                ctx.moveTo(px + 24, py);
-                ctx.lineTo(px + 24, py + TILE_SIZE);
+                // 左侧竖杆 - 如果上方有连接则延伸到格子外
+                ctx.moveTo(px + 8, hasAbove ? py - 4 : py);
+                ctx.lineTo(px + 8, hasBelow ? py + TILE_SIZE + 4 : py + TILE_SIZE);
+                // 右侧竖杆
+                ctx.moveTo(px + 24, hasAbove ? py - 4 : py);
+                ctx.lineTo(px + 24, hasBelow ? py + TILE_SIZE + 4 : py + TILE_SIZE);
                 ctx.stroke();
+
                 // 横档
                 ctx.lineWidth = 3;
                 for (let i = 0; i < 3; i++) {

@@ -2,6 +2,10 @@
 
 class Game {
     constructor() {
+        console.log('===== GAME VERSION 20231227d LOADED =====');
+        console.log('Ladder two-pass rendering: ENABLED');
+        console.log('Trap alignment fix: ENABLED');
+        console.log('Render order fix: ENABLED (background → player → enemy → ladders)');
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.state = GameState.PLAYING;
@@ -120,8 +124,8 @@ class Game {
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 渲染关卡
-        this.level.render(this.ctx);
+        // 渲染关卡背景（不含梯子）
+        this.level.renderBackground(this.ctx);
 
         // 渲染玩家
         this.player.render(this.ctx);
@@ -130,6 +134,9 @@ class Game {
         for (let enemy of this.enemies) {
             enemy.render(this.ctx);
         }
+
+        // 渲染梯子（显示在最上层，覆盖玩家和敌人）
+        this.level.renderLadders(this.ctx);
 
         // 渲染暂停提示
         if (this.state === GameState.PAUSED) {

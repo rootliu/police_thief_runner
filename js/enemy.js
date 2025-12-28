@@ -44,13 +44,42 @@ class Enemy {
         // 应用垂直速度
         this.y += this.velocityY;
 
-        // 检查地面碰撞并修正位置
-        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map);
+        // 检查是否掉入陷阱（在地面对齐之前检查）
+        const characterBottom = this.y + this.height / 2;
+        const gridX = Math.floor(this.x / TILE_SIZE);
+        const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
+        const belowTile = level.getTile(gridX, belowGridY);
+
+        // 如果脚下是被挖的洞，就被困住
+        if (belowTile === TILES.DUG_HOLE && !this.isTrapped) {
+            this.isTrapped = true;
+            this.trapTimer = Date.now();
+            // 将警察固定在洞格子的中心位置（这样小偷可以从警察头上跑过）
+            this.y = belowGridY * TILE_SIZE + TILE_SIZE / 2;
+            this.velocityY = 0;
+            console.log(`Police trapped at belowGridY=${belowGridY}, y=${this.y}, TILE_SIZE=${TILE_SIZE}`);
+            return; // 立即返回，不再执行后续的地面对齐
+        }
+
+        // 检查地面碰撞并修正位置（isPlayer=false，敌人会被困在洞里）
+        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map, false);
         if (this.isOnGround) {
-            // 对齐到地面 - 使用与isOnGround相同的计算方式
+            // 对齐到地面 - 找到角色底部所在的最近地面
             const characterBottom = this.y + this.height / 2;
-            const belowGridY = Math.floor((characterBottom + 2) / TILE_SIZE);
-            const floorTop = belowGridY * TILE_SIZE;
+            const gridX = Math.floor(this.x / TILE_SIZE);
+            const currentGridY = Math.floor(characterBottom / TILE_SIZE);
+            const currentTile = level.map[currentGridY]?.[gridX];
+
+            let floorTop;
+            // 对于敌人，BRICK、SOLID和DUG_HOLE都算作穿透的地面
+            if (currentTile === TILES.BRICK || currentTile === TILES.SOLID || currentTile === TILES.DUG_HOLE) {
+                // 角色已经穿透进了一个可站立的tile，对齐到这个tile的顶部
+                floorTop = currentGridY * TILE_SIZE;
+            } else {
+                // 正常站立，对齐到下方tile的顶部
+                const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
+                floorTop = belowGridY * TILE_SIZE;
+            }
 
             // 将角色底部对齐到地面顶部
             this.y = floorTop - this.height / 2;
@@ -62,27 +91,22 @@ class Enemy {
         if (this.x > CANVAS_WIDTH - TILE_SIZE) this.x = CANVAS_WIDTH - TILE_SIZE;
         if (this.y < TILE_SIZE) this.y = TILE_SIZE;
         if (this.y > CANVAS_HEIGHT - TILE_SIZE) this.y = CANVAS_HEIGHT - TILE_SIZE;
-
-        // 检查是否掉入陷阱（在移动和重力应用后检查）
-        const grid = Physics.pixelToGrid(this.x, this.y);
-        const belowTile = level.getTile(grid.gridX, grid.gridY + 1);
-
-        // 如果脚下是被挖的洞，就被困住
-        if (belowTile === TILES.DUG_HOLE) {
-            this.isTrapped = true;
-            this.trapTimer = Date.now();
-            // 将警察固定在陷阱中
-            this.y = (grid.gridY + 1) * TILE_SIZE + TILE_SIZE / 2;
-            this.velocityY = 0;
-        }
     }
 
     chasePlayer(playerX, playerY, level) {
         const dx = playerX - this.x;
         const dy = playerY - this.y;
 
-        // 水平追踪
-        if (Math.abs(dx) > 10) {
+        // 垂直追踪优先（如果在梯子上且玩家在不同楼层）
+        if (this.isOnLadder && Math.abs(dy) > TILE_SIZE / 2) {
+            if (dy > 0) {
+                this.y += CLIMB_SPEED * 0.8;
+            } else {
+                this.y -= CLIMB_SPEED * 0.8;
+            }
+        }
+        // 否则水平追踪
+        else if (Math.abs(dx) > 10) {
             if (dx > 0) {
                 this.direction = Direction.RIGHT;
                 if (Physics.canMove(this.x, this.y, Direction.RIGHT, this.width, level.map)) {
@@ -93,15 +117,6 @@ class Enemy {
                 if (Physics.canMove(this.x, this.y, Direction.LEFT, this.width, level.map)) {
                     this.x -= ENEMY_SPEED;
                 }
-            }
-        }
-
-        // 垂直追踪（如果在梯子上）
-        if (this.isOnLadder && Math.abs(dy) > 10) {
-            if (dy > 0) {
-                this.y += CLIMB_SPEED * 0.8;
-            } else {
-                this.y -= CLIMB_SPEED * 0.8;
             }
         }
     }
@@ -158,6 +173,10 @@ class Enemy {
     }
 
     checkCollisionWithPlayer(playerX, playerY, playerWidth, playerHeight) {
+        // 被困在洞里的警察不会抓住玩家
+        if (this.isTrapped) {
+            return false;
+        }
         return Physics.checkCollision(
             this.x - this.width / 2,
             this.y - this.height / 2,
