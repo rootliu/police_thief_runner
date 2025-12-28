@@ -98,6 +98,13 @@ class Enemy {
         const dx = playerX - this.x;
         const dy = playerY - this.y;
 
+        // 如果在梯子上且执行垂直追踪，对齐X坐标到梯子中心
+        if (this.isOnLadder && Math.abs(dy) > TILE_SIZE / 2) {
+            const gridX = Math.floor(this.x / TILE_SIZE);
+            const ladderCenterX = gridX * TILE_SIZE + TILE_SIZE / 2;
+            this.x = ladderCenterX;
+        }
+
         // 垂直追踪优先（如果在梯子上且玩家在不同楼层）
         if (this.isOnLadder && Math.abs(dy) > TILE_SIZE / 2) {
             if (dy > 0) {

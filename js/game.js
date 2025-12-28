@@ -2,12 +2,15 @@
 
 class Game {
     constructor() {
-        console.log('===== GAME VERSION 20231227e LOADED =====');
+        console.log('===== GAME VERSION 20231227f LOADED =====');
         console.log('Ladder two-pass rendering: ENABLED');
         console.log('Trap Y-axis alignment fix: ENABLED');
         console.log('Trap X-axis alignment fix: ENABLED');
         console.log('Render order fix: ENABLED (background → player → enemy → ladders)');
         console.log('Floating treasure fix: ENABLED');
+        console.log('Hole drop X-axis alignment: ENABLED');
+        console.log('Ladder climb X-axis alignment (player): ENABLED');
+        console.log('Ladder climb X-axis alignment (enemy): ENABLED');
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.state = GameState.PLAYING;

@@ -38,6 +38,13 @@ class Player {
         this.isOnLadder = Physics.isOnLadder(this.x, this.y, this.height, level.map);
         this.isOnBar = Physics.isOnBar(this.x, this.y, this.height, level.map);
 
+        // 如果在梯子上且不进行水平移动，对齐X坐标到梯子中心
+        if (this.isOnLadder && !keys['ArrowLeft'] && !keys['ArrowRight']) {
+            const gridX = Math.floor(this.x / TILE_SIZE);
+            const ladderCenterX = gridX * TILE_SIZE + TILE_SIZE / 2;
+            this.x = ladderCenterX;
+        }
+
         // 垂直移动（爬梯子或横杆）
         if (keys['ArrowUp']) {
             if (this.isOnLadder) {
@@ -71,6 +78,20 @@ class Player {
 
         // 检查地面碰撞并修正位置 (isPlayer=true，玩家可以穿过洞)
         this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map, true);
+
+        // 如果正在从洞掉落，对齐X坐标到洞中心
+        if (!this.isOnGround && !this.isOnLadder && !this.isOnBar) {
+            const characterBottom = this.y + this.height / 2;
+            const gridX = Math.floor(this.x / TILE_SIZE);
+            const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
+            const belowTile = level.map[belowGridY]?.[gridX];
+
+            if (belowTile === TILES.DUG_HOLE) {
+                // 正在从洞掉落，对齐X坐标到洞中心
+                const holeCenterX = gridX * TILE_SIZE + TILE_SIZE / 2;
+                this.x = holeCenterX;
+            }
+        }
 
         if (this.isOnGround) {
             // 对齐到地面 - 找到角色底部所在的最近地面
