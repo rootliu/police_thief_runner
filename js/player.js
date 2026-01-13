@@ -15,7 +15,7 @@ class Player {
         this.isAlive = true;
     }
 
-    update(keys, level) {
+    update(keys, level, enemies = []) {
         if (!this.isAlive) return;
 
         // 水平移动
@@ -79,7 +79,7 @@ class Player {
         // 检查地面碰撞并修正位置 (isPlayer=true，玩家可以穿过洞)
         this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map, true);
 
-        // 如果正在从洞掉落，对齐X坐标到洞中心
+        // 如果正在从洞掉落，对齐X坐标到洞中心（但如果洞里有被困警察，则不对齐）
         if (!this.isOnGround && !this.isOnLadder && !this.isOnBar) {
             const characterBottom = this.y + this.height / 2;
             const gridX = Math.floor(this.x / TILE_SIZE);
@@ -87,11 +87,58 @@ class Player {
             const belowTile = level.map[belowGridY]?.[gridX];
 
             if (belowTile === TILES.DUG_HOLE) {
-                // 正在从洞掉落，对齐X坐标到洞中心
-                const holeCenterX = gridX * TILE_SIZE + TILE_SIZE / 2;
-                this.x = holeCenterX;
+                // 检查是否有被困的警察在这个洞里
+                let hasTrappedEnemy = false;
+                if (enemies) {
+                    for (const enemy of enemies) {
+                        if (enemy.isTrapped) {
+                            const enemyGridX = Math.floor(enemy.x / TILE_SIZE);
+                            const enemyGridY = Math.floor(enemy.y / TILE_SIZE);
+                            if (enemyGridX === gridX && enemyGridY === belowGridY) {
+                                hasTrappedEnemy = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // 只有空洞才对齐到中心（让小偷掉下去）
+                if (!hasTrappedEnemy) {
+                    const holeCenterX = gridX * TILE_SIZE + TILE_SIZE / 2;
+                    this.x = holeCenterX;
+                }
             }
         }
+
+        // 检查地面碰撞并修正位置（isPlayer=true，允许穿过洞）
+        this.isOnGround = Physics.isOnGround(this.x, this.y, this.height, level.map, true);
+
+        // 特殊检查：如果脚下的洞里有被困的警察，小偷可以安全通过（格子级检查）
+        if (!this.isOnGround && enemies) {
+            const thiefGridX = Math.floor(this.x / TILE_SIZE);
+            const characterBottom = this.y + this.height / 2;
+            const belowGridY = Math.floor((characterBottom + 1) / TILE_SIZE);
+            const belowTile = level.map[belowGridY]?.[thiefGridX];
+
+            if (belowTile === TILES.DUG_HOLE) {
+                for (const enemy of enemies) {
+                    if (enemy.isTrapped) {
+                        const enemyGridX = Math.floor(enemy.x / TILE_SIZE);
+                        const enemyGridY = Math.floor(enemy.y / TILE_SIZE);
+                        if (enemyGridX === thiefGridX && enemyGridY === belowGridY) {
+                            this.isOnGround = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log('After ground check:', {
+            y: this.y,
+            isOnGround: this.isOnGround,
+            velocityY: this.velocityY
+        });
 
         if (this.isOnGround) {
             // 对齐到地面 - 找到角色底部所在的最近地面
@@ -122,8 +169,7 @@ class Player {
         if (this.y < TILE_SIZE) this.y = TILE_SIZE;
         if (this.y > CANVAS_HEIGHT - TILE_SIZE) this.y = CANVAS_HEIGHT - TILE_SIZE;
 
-        // 检查是否收集宝物
-        this.collectTreasure(level);
+        // 注意：宝物收集由 game.update() 处理，不在这里调用
     }
 
     collectTreasure(level) {

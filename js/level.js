@@ -136,8 +136,13 @@ class Level {
                 // 梯子 - 检查上下是否有连接
                 const tileAbove = this.map[gridY - 1]?.[gridX];
                 const tileBelow = this.map[gridY + 1]?.[gridX];
-                const hasAbove = tileAbove === TILES.LADDER || tileAbove === TILES.EMPTY;
-                const hasBelow = tileBelow === TILES.LADDER || tileBelow === TILES.EMPTY;
+                // 梯子应该延伸到非空气、非梯子的tile（如砖块、墙）
+                const hasAbove = tileAbove !== undefined &&
+                                 tileAbove !== TILES.EMPTY &&
+                                 tileAbove !== TILES.LADDER;
+                const hasBelow = tileBelow !== undefined &&
+                                 tileBelow !== TILES.EMPTY &&
+                                 tileBelow !== TILES.LADDER;
 
                 ctx.strokeStyle = COLORS.LADDER;
                 ctx.lineWidth = 4;

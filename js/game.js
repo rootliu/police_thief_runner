@@ -2,7 +2,7 @@
 
 class Game {
     constructor() {
-        console.log('===== GAME VERSION 20231227f LOADED =====');
+        console.log('===== GAME VERSION 20231227g LOADED =====');
         console.log('Ladder two-pass rendering: ENABLED');
         console.log('Trap Y-axis alignment fix: ENABLED');
         console.log('Trap X-axis alignment fix: ENABLED');
@@ -11,6 +11,8 @@ class Game {
         console.log('Hole drop X-axis alignment: ENABLED');
         console.log('Ladder climb X-axis alignment (player): ENABLED');
         console.log('Ladder climb X-axis alignment (enemy): ENABLED');
+        console.log('Ladder-floor intersection fix: ENABLED');
+        console.log('Level complete debug logs: ENABLED');
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.state = GameState.PLAYING;
@@ -65,6 +67,7 @@ class Game {
 
             // 重启
             if (e.key === 'r' || e.key === 'R') {
+                console.log('R key pressed, calling restart()...');
                 this.restart();
             }
         });
@@ -98,13 +101,14 @@ class Game {
         this.level.updateHoles();
 
         // 更新玩家
-        this.player.update(this.keys, this.level);
+        this.player.update(this.keys, this.level, this.enemies);
 
         // 检查宝物收集
         if (this.player.collectTreasure(this.level)) {
             this.collectedTreasures++;
             this.score += 100;
             this.updateUI();
+            console.log(`📦 Treasure collected! Progress: ${this.collectedTreasures}/${this.totalTreasures}`);
         }
 
         // 更新敌人
@@ -120,6 +124,7 @@ class Game {
 
         // 检查关卡完成
         if (this.collectedTreasures >= this.totalTreasures) {
+            console.log(`🎯 All treasures collected! Triggering level complete...`);
             this.levelComplete();
         }
     }
@@ -157,6 +162,7 @@ class Game {
 
         // 渲染关卡完成
         if (this.state === GameState.LEVEL_COMPLETE) {
+            console.log('🎨 Rendering level complete screen');
             this.ctx.fillStyle = 'rgba(0, 100, 0, 0.8)';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.fillStyle = '#FFD700';
@@ -197,9 +203,12 @@ class Game {
     }
 
     levelComplete() {
+        console.log('🎉🎉🎉 levelComplete() called!');
+        console.log(`State changing from ${this.state} to LEVEL_COMPLETE`);
         this.state = GameState.LEVEL_COMPLETE;
         this.score += 1000; // 关卡完成奖励
         this.updateUI();
+        console.log(`New state: ${this.state}, Score: ${this.score}`);
     }
 
     togglePause() {
@@ -211,9 +220,13 @@ class Game {
     }
 
     restart() {
+        console.log('restart() function called!');
+        console.log('Current state:', this.state);
+        this.score = 0;
         this.lives = INITIAL_LIVES;
         this.collectedTreasures = 0;
         this.state = GameState.PLAYING;
+        console.log('New state:', this.state);
 
         // 重新初始化关卡
         this.level = new Level(LEVEL_1);

@@ -95,27 +95,61 @@ class Enemy {
     }
 
     chasePlayer(playerX, playerY, level) {
-        const dx = playerX - this.x;
-        const dy = playerY - this.y;
+        // 格子级位置比较
+        const enemyGridX = Math.floor(this.x / TILE_SIZE);
+        const enemyGridY = Math.floor(this.y / TILE_SIZE);
+        const playerGridX = Math.floor(playerX / TILE_SIZE);
+        const playerGridY = Math.floor(playerY / TILE_SIZE);
 
-        // 如果在梯子上且执行垂直追踪，对齐X坐标到梯子中心
-        if (this.isOnLadder && Math.abs(dy) > TILE_SIZE / 2) {
-            const gridX = Math.floor(this.x / TILE_SIZE);
-            const ladderCenterX = gridX * TILE_SIZE + TILE_SIZE / 2;
-            this.x = ladderCenterX;
-        }
+        // 如果玩家在不同楼层
+        if (playerGridY !== enemyGridY) {
+            // 如果已经在梯子上，继续攀爬
+            if (this.isOnLadder) {
+                this.x = enemyGridX * TILE_SIZE + TILE_SIZE / 2;
+                if (playerGridY > enemyGridY) {
+                    this.y += CLIMB_SPEED * 0.8;
+                } else {
+                    this.y -= CLIMB_SPEED * 0.8;
+                }
+                return;
+            }
 
-        // 垂直追踪优先（如果在梯子上且玩家在不同楼层）
-        if (this.isOnLadder && Math.abs(dy) > TILE_SIZE / 2) {
-            if (dy > 0) {
-                this.y += CLIMB_SPEED * 0.8;
-            } else {
-                this.y -= CLIMB_SPEED * 0.8;
+            // 不在梯子上，寻找最近的梯子
+            let nearestLadderX = -1;
+            let minDistance = Infinity;
+
+            // 在当前行搜索梯子
+            for (let x = 0; x < level.map[0].length; x++) {
+                const tile = level.map[enemyGridY]?.[x];
+                if (tile === TILES.LADDER) {
+                    const dist = Math.abs(x - enemyGridX);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        nearestLadderX = x;
+                    }
+                }
+            }
+
+            // 如果找到梯子，向它移动
+            if (nearestLadderX !== -1) {
+                if (nearestLadderX > enemyGridX) {
+                    this.direction = Direction.RIGHT;
+                    if (Physics.canMove(this.x, this.y, Direction.RIGHT, this.width, level.map)) {
+                        this.x += ENEMY_SPEED;
+                    }
+                } else if (nearestLadderX < enemyGridX) {
+                    this.direction = Direction.LEFT;
+                    if (Physics.canMove(this.x, this.y, Direction.LEFT, this.width, level.map)) {
+                        this.x -= ENEMY_SPEED;
+                    }
+                }
+                return;
             }
         }
-        // 否则水平追踪
-        else if (Math.abs(dx) > 10) {
-            if (dx > 0) {
+
+        // 同一楼层，水平追踪
+        if (playerGridX !== enemyGridX) {
+            if (playerGridX > enemyGridX) {
                 this.direction = Direction.RIGHT;
                 if (Physics.canMove(this.x, this.y, Direction.RIGHT, this.width, level.map)) {
                     this.x += ENEMY_SPEED;
