@@ -115,17 +115,28 @@ class Enemy {
             }
 
             // 不在梯子上，寻找最近的梯子
+            // 搜索当前行和目标方向的相邻行
             let nearestLadderX = -1;
             let minDistance = Infinity;
 
-            // 在当前行搜索梯子
-            for (let x = 0; x < level.map[0].length; x++) {
-                const tile = level.map[enemyGridY]?.[x];
-                if (tile === TILES.LADDER) {
-                    const dist = Math.abs(x - enemyGridX);
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                        nearestLadderX = x;
+            // 确定要搜索的行：当前行 + 玩家方向的相邻行
+            const rowsToSearch = [enemyGridY];
+            if (playerGridY > enemyGridY && enemyGridY + 1 < level.map.length) {
+                rowsToSearch.push(enemyGridY + 1); // 玩家在下方，也搜索下一行
+            } else if (playerGridY < enemyGridY && enemyGridY - 1 >= 0) {
+                rowsToSearch.push(enemyGridY - 1); // 玩家在上方，也搜索上一行
+            }
+
+            // 在这些行搜索梯子
+            for (const row of rowsToSearch) {
+                for (let x = 0; x < level.map[0].length; x++) {
+                    const tile = level.map[row]?.[x];
+                    if (tile === TILES.LADDER) {
+                        const dist = Math.abs(x - enemyGridX);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            nearestLadderX = x;
+                        }
                     }
                 }
             }
@@ -141,6 +152,14 @@ class Enemy {
                     this.direction = Direction.LEFT;
                     if (Physics.canMove(this.x, this.y, Direction.LEFT, this.width, level.map)) {
                         this.x -= ENEMY_SPEED;
+                    }
+                } else {
+                    // 已经在梯子列，但还未被检测为isOnLadder
+                    // 尝试向玩家方向移动进入梯子
+                    if (playerGridY > enemyGridY) {
+                        this.y += CLIMB_SPEED * 0.5; // 向下移动进入梯子
+                    } else {
+                        this.y -= CLIMB_SPEED * 0.5; // 向上移动进入梯子
                     }
                 }
                 return;
