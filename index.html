@@ -1,32 +1,97 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>警察抓小偷 - Thief Runner v20231227g</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <div id="game-container">
-        <div id="game-header">
-            <div class="score-panel">
-                <span>得分: <span id="score">0</span></span>
-                <span>关卡: <span id="level">1</span></span>
-                <span>生命: <span id="lives">3</span></span>
-                <span>宝物: <span id="treasures">0</span>/<span id="total-treasures">0</span></span>
-            </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111713" />
+    <link rel="icon" href="favicon.svg" />
+    <title>Lode Runner · 洞窟归来</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <a class="brand" href="./">LR<span>ARCHIVE / 1994</span></a>
+        <div class="edition">BROWSER EDITION <i></i> READY TO PLAY</div>
+      </header>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">THE CAVERNS ARE CALLING</p>
+          <h1>LODE RUNNER<span>洞窟归来</span></h1>
         </div>
-        <canvas id="gameCanvas" width="800" height="576"></canvas>
-        <div id="game-info">
-            <p>方向键: 移动 | Z键: 挖左洞 | X键: 挖右洞 | P键: 暂停 | R键: 重启</p>
+        <p>收集黄金，挖开退路。<br />在守卫追上你之前，找到出口。</p>
+      </section>
+      <section class="machine" aria-label="Lode Runner 游戏">
+        <div class="machine-top">
+          <span id="world">01 / MOSS CAVERNS</span
+          ><span>VGA INSPIRED · WEB EDITION</span>
         </div>
-    </div>
-
-    <script src="js/constants.js?v=20231227g"></script>
-    <script src="js/physics.js?v=20231227g"></script>
-    <script src="js/level.js?v=20231227g"></script>
-    <script src="js/player.js?v=20231227g"></script>
-    <script src="js/enemy.js?v=20231227g"></script>
-    <script src="js/game.js?v=20231227g"></script>
-</body>
+        <div class="screen" id="screen">
+          <canvas
+            id="game"
+            width="800"
+            height="576"
+            tabindex="0"
+            aria-label="游戏区域，方向键移动，Z X 挖洞"
+          ></canvas>
+          <div class="scanlines"></div>
+          <div id="overlay" class="overlay">
+            <p id="overlay-kicker">EXPEDITION 01</p>
+            <h2 id="overlay-title">洞窟归来</h2>
+            <p id="overlay-copy">
+              黄金散落在古老洞窟中。收齐它们，出口才会开启。
+            </p>
+            <button id="primary">开始探险 <span>↵ ENTER</span></button>
+            <p class="small">方向键移动 · Z / X 挖洞 · P 暂停</p>
+          </div>
+        </div>
+        <div class="hud">
+          <div><label>SCORE / 得分</label><b id="score">000000</b></div>
+          <div><label>GOLD / 黄金</label><b id="gold">00 / 00</b></div>
+          <div><label>LIVES / 生命</label><b id="lives">♥ ♥ ♥</b></div>
+          <div><label>TIME / 用时</label><b id="time">00:00</b></div>
+        </div>
+      </section>
+      <div class="toolbar">
+        <p id="status" role="status">准备好进入洞窟了吗？</p>
+        <div>
+          <button id="pause">暂停 P</button><button id="restart">重开 R</button
+          ><button id="sound" aria-pressed="false">声音 关</button
+          ><button id="crt" aria-pressed="true">CRT 开</button
+          ><button id="fullscreen">全屏 ⛶</button>
+        </div>
+      </div>
+      <div class="touch" aria-label="触屏控制">
+        <button data-key="ArrowLeft" aria-label="向左">◀</button
+        ><button data-key="ArrowUp" aria-label="向上">▲</button
+        ><button data-key="ArrowDown" aria-label="向下">▼</button
+        ><button data-key="ArrowRight" aria-label="向右">▶</button
+        ><button data-key="z">挖左</button><button data-key="x">挖右</button>
+      </div>
+      <section class="guide">
+        <article>
+          <span>01</span>
+          <h3>搜寻黄金</h3>
+          <p>沿梯子攀爬，抓住横杆穿越断层。收齐黄金后，前往发光出口。</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>让追兵落空</h3>
+          <p>Z / X 挖开左下或右下的泥土。洞会在 6 秒后回填，被困守卫将重生。</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>深入洞窟</h3>
+          <p>三座原创洞窟，逐步增加追兵。向下可松开横杆；离开窗口自动暂停。</p>
+        </article>
+      </section>
+      <footer>
+        <span>LODE RUNNER / CAVERN EDITION</span>
+        <p>致敬 1994 年经典的原创浏览器重制 · 无需安装 DOSBox · 无原作素材</p>
+        <a href="https://github.com/rootliu/police_thief_runner">SOURCE ↗</a>
+      </footer>
+    </main>
+    <script src="js/engine.js"></script>
+    <script src="js/game.js"></script>
+  </body>
 </html>
