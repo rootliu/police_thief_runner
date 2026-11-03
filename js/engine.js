@@ -126,6 +126,10 @@
       a.x = a.fromX + (a.toX - a.fromX) * a.progress;
       a.y = a.fromY + (a.toY - a.fromY) * a.progress;
     }
+    occupiesOrEnters(a, x, y) {
+      return (Math.round(a.x) === x && Math.round(a.y) === y) ||
+        (a.toX === x && a.toY === y);
+    }
     supported(x, y) {
       return (
         solid(this.tile(x, y + 1)) ||
@@ -218,12 +222,12 @@
         if (h.left <= 0) {
           this.map[h.y][h.x] = "#";
           this.holes.splice(this.holes.indexOf(h), 1);
-          if (Math.round(p.x) === h.x && Math.round(p.y) === h.y) {
+          if (this.occupiesOrEnters(p, h.x, h.y)) {
             this.die();
             return;
           }
           this.enemies.forEach((e, i) => {
-            if (e.trapped && e.toX === h.x && e.toY === h.y) {
+            if (this.occupiesOrEnters(e, h.x, h.y)) {
               this.enemies[i] = this.actor(this.level.spawns[i]);
               this.score += 250;
               this.emit("trap");

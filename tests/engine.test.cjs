@@ -174,3 +174,36 @@ test("walk every gold route and exit with fixed-step keyboard movement", () => {
     assert.equal(g.state, "complete", `walkthrough level ${level + 1}`);
   }
 });
+test("refilling a hole catches a player still falling into it", () => {
+  for (const progress of [0, 0.1, 0.49, 0.51, 0.99, 1]) {
+    const g = new Engine();
+    g.start();
+    g.enemies = [];
+    g.dig(1);
+    g.player = g.actor({ x: 3, y: 15 });
+    g.move(g.player, 0, 1, 0.1);
+    g.advance(g.player, progress * 0.1);
+    g.holes[0].left = STEP / 2;
+    tick(g, 20);
+    assert.equal(g.lives, 2, `fall progress ${progress}`);
+    assert.equal(g.tile(g.player.toX, g.player.toY), " ");
+    tick(g, 12, { ArrowRight: true });
+    assert.ok(g.player.x > 2, "player can move after respawn");
+  }
+});
+test("refilling a hole catches a guard before its trapped flag is set", () => {
+  for (const progress of [0, 0.1, 0.49, 0.51, 0.99, 1]) {
+    const g = new Engine();
+    g.start();
+    g.dig(1);
+    const e = g.actor({ x: 3, y: 15 });
+    g.enemies = [e];
+    g.move(e, 0, 1, 0.1);
+    g.advance(e, progress * 0.1);
+    g.holes[0].left = STEP / 2;
+    tick(g);
+    assert.notEqual(g.enemies[0], e, `fall progress ${progress}`);
+    assert.equal(g.score, 250);
+    assert.equal(g.enemies[0].trapped, false);
+  }
+});
