@@ -39,6 +39,34 @@ test("hole traps guard, refills, respawns guard and awards score", () => {
   assert.equal(g.enemies[0].trapped, false);
   assert.equal(g.score, 250);
 });
+test("guard falls into a newly dug dead-end hole even without a path to player", () => {
+  const g = new Engine();
+  g.start();
+  g.enemies = [g.actor({ x: 3, y: 15 })];
+  assert.ok(g.dig(1));
+  assert.equal(g.enemyDirection(g.enemies[0]), null);
+  tick(g, 2);
+  assert.ok(g.enemies[0].y > 15, "gravity starts without a chase route");
+  tick(g, 20);
+  assert.equal(g.enemies[0].y, 16);
+  assert.equal(g.enemies[0].trapped, true);
+  tick(g, 340);
+  assert.equal(g.holes.length, 0);
+  assert.equal(g.score, 250);
+  assert.equal(g.enemies[0].trapped, false);
+});
+test("guard finishing a horizontal step falls into the hole below", () => {
+  const g = new Engine();
+  g.start();
+  const e = g.actor({ x: 4, y: 15 });
+  g.enemies = [e];
+  g.move(e, -1, 0, 0.26);
+  assert.ok(g.dig(1));
+  tick(g, 35);
+  assert.equal(e.x, 3);
+  assert.equal(e.y, 16);
+  assert.equal(e.trapped, true);
+});
 test("gold unlocks exit but does not automatically complete level", () => {
   const g = new Engine();
   g.start();

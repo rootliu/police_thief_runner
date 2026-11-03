@@ -133,10 +133,13 @@
         this.enemies.some((e) => e.trapped && e.toX === x && e.toY === y + 1)
       );
     }
+    falling(x, y) {
+      return !["H", "E", "-"].includes(this.tile(x, y)) && !this.supported(x, y);
+    }
     options(x, y) {
       const here = this.tile(x, y),
         below = this.tile(x, y + 1);
-      if (here !== "H" && here !== "E" && here !== "-" && !this.supported(x, y))
+      if (this.falling(x, y))
         return [[0, 1]];
       const out = [];
       for (const dx of [-1, 1])
@@ -250,11 +253,7 @@
           return;
         }
         const opts = this.options(x, y),
-          falling =
-            this.tile(x, y) !== "H" &&
-            this.tile(x, y) !== "E" &&
-            this.tile(x, y) !== "-" &&
-            !this.supported(x, y);
+          falling = this.falling(x, y);
         const desired = falling
           ? [0, 1]
           : keys.ArrowUp
@@ -282,8 +281,10 @@
             this.emit("trap");
             continue;
           }
-          const d = this.enemyDirection(e);
-          if (d) this.move(e, ...d, 0.26 - this.levelIndex * 0.025);
+          // Gravity must work even when no chase route exists out of a hole.
+          const falling = this.falling(e.toX, e.toY);
+          const d = falling ? [0, 1] : this.enemyDirection(e);
+          if (d) this.move(e, ...d, falling ? 0.1 : 0.26 - this.levelIndex * 0.025);
         }
         if (
           !p.immune &&
